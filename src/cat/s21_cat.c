@@ -1,23 +1,22 @@
 #include "s21_cat.h"
 
 void initFlags(flags *items) {
-    items->temp_f.n = items->temp_f.b = items->temp_f.s = items->temp_f.s1 = items->temp_f.text = 0;
+    items->b = items->e = items->v = items->n = items->s = items->t = items->files = 0;
 }
 
 void initVariables(flags *items) {
-    items->b = items->e = items->v = items->n = items->s = items->t = items->files = 0;
-
+    items->temp_f.n = items->temp_f.b = items->temp_f.s = items->temp_f.s1 = items->temp_f.text = 0;
 }
 
 int handleGetFiles(char *argsState[], int argc, char *argv[]) {
-    int count = 0;
+    int amount = 0;
     for(int i = 1; i < argc; i++) {
         if(argv[i][0] != '-') {
-            argsState[count] = argv[i];
-            count++;
+            argsState[amount] = argv[i];
+            amount++;
         }
     }
-    return count;
+    return amount;
 }
 
 void handleCatFiles(flags *items, int argc, char *argv[]) {
@@ -64,14 +63,14 @@ int handleGetStreams(FILE *streams[], int amount, int *currentStream) {
     int ch;
     while(1) {
         if(streams[*currentStream] == NULL) {
-            perror("file dont exist");
-            currentStream++;
+            perror("file dont exist or invalid directory");
+            ++*currentStream;
             continue;
         }
         ch = fgetc(streams[*currentStream]);
         if(ch == EOF) {
             if(*currentStream < amount - 1) {
-                currentStream++;
+                ++*currentStream;
             } else {
                 break;
             }
@@ -101,7 +100,7 @@ void handleEndcoding(int ch) {
 }
 
 void caseVET(flags *items, int string) {
-    if(items->v && (string < 32 || string > 126) && (string != 9 && string > 126) && (string != 9 && string != 10)) {
+    if(items->v && (string < 32 || string > 126) && (string != 9 && string != 10)) {
         handleEndcoding(string);
     } else if(items->e && items->v && (string < 32 || string > 126) && (string != 9)) {
         handleEndcoding(string);
@@ -237,6 +236,7 @@ int main (int argc, char *argv[]) {
     initFlags(&items);
 
     if(argc > 1) {
+        handleParseFlags(&items, argc, argv);
         char *argcState[argc - 1];
         items.files = handleGetFiles(argcState, argc, argv);
         if(items.none) {
