@@ -44,7 +44,7 @@ void lineGetter(int argc, flags* item, FILE* file, const char* filename) {
 }
 
 int handleSearch(char* line, flags* item, regex_t regex, const char* filename,
-              int* matchAmount, int argc) {
+                 int* matchAmount, int argc) {
   regmatch_t pmatch[100];
   int check = regexec(&regex, line, 0, pmatch, 0);
   if (check == 0) (*matchAmount)++;
@@ -99,15 +99,15 @@ void parserFlags(int argc, char** argv, flags* item) {
 }
 
 void handleSort(flags* item, int check, char* line, const char* filename,
-             int argc) {
+                int argc) {
   if (item->v) check = !check;
   if (!item->l && !item->n && !item->c) {
     if (check == 0 && !item->n) {
-        if ((argc - optind) > 1) {
-          printf("%s:%s", filename, line);
-        } else {
-          printf("%s", line);
-        }
+      if ((argc - optind) > 1) {
+        printf("%s:%s", filename, line);
+      } else {
+        printf("%s", line);
+      }
     }
   }
 }

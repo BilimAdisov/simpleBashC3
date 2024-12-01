@@ -1,19 +1,18 @@
 #ifndef CAT_H
 #define CAT_H
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
-
 
 typedef struct flags_alt {
-    int n, b, s, s1, text;
-}  flags_alt;
+  int n, b, s, s1, text;
+} flags_alt;
 
 typedef struct flags {
-    int b, e, v, n, s, t, line, none, files;
-    flags_alt temp_f;
+  int b, e, v, n, s, t, line, none, files;
+  flags_alt temp_f;
 } flags;
 
 void handleEndcoding(int ch);

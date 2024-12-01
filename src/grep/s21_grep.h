@@ -19,5 +19,6 @@ void handleInitializeFlags(flags* item);
 void lineGetter(int argc, flags* arg, FILE* file, const char* filename);
 void parserFlags(int argc, char** argv, flags* arg);
 int handleSearch(char* line, flags* arg, regex_t regex, const char* filename,
-              int* matchcounter, int argc);
-void handleSort(flags* arg, int check, char* line, const char* filename, int argc);
+                 int* matchcounter, int argc);
+void handleSort(flags* arg, int check, char* line, const char* filename,
+                int argc);
