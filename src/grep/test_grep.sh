@@ -49,10 +49,10 @@ testing()
     if [ "$DIFF_RES" == "Files test_s21_grep.log and test_grep.log are identical" ]
     then
       (( SUCCESS++ ))
-      echo "$FAIL $SUCCESS $t"
+      echo "SUCCESS $FAIL $SUCCESS $t"
     else
       (( FAIL++ ))
-      echo "$FAIL $SUCCESS $t"
+      echo "FAIL $FAIL $SUCCESS $t"
     fi
     rm test_s21_grep.log test_grep.log
 }
