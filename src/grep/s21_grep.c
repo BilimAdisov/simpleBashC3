@@ -60,6 +60,8 @@ void handleInitializeFlags(flags* item) {
 void parserFlags(int argc, char** argv, flags* item) {
   int opt;
 
+  handleInitializeFlags(item);
+
   while ((opt = getopt(argc, argv, "e:ivcln")) != -1) {
     switch (opt) {
       case 'e':
@@ -117,7 +119,6 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "error: not enough flags");
   } else {
     flags* item = calloc(1, sizeof(flags));
-    handleInitializeFlags(item);
     if (!item) {
       fprintf(stderr, "something has failed :(");
     } else {

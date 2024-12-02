@@ -18,6 +18,6 @@ style_check:
 	clang-format -n s21_grep.c
 
 clean:
-	rm -rf *.o
+	rm -rf *.o s21_grep
 
 rebuild: clean all
