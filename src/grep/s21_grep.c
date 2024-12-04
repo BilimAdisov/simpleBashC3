@@ -59,11 +59,22 @@ void handleInitializeFlags(flags* item) {
   item->patterns[0] = '\0';
 }
 
-void parserFlags(int argc, char** argv, flags* items) {
-  handleInitializeFlags(items);
+void parserFlags(flags* items, int argc, char *argv[]) {
+  items->e = items->i = items->v = items->c = items->l = items->n = 0;
+  items->patterns[0] = '\0';
   int opt;
 
-  while ((opt = getopt(argc, argv, "e:ivcln")) != -1) {
+    struct option long_options[] = {
+      {"pattern", no_argument, NULL, 'e'},
+      {"invert-match", no_argument, NULL, 'v'},
+      {"ignore-case", no_argument, NULL, 'i'},
+      {"count", no_argument, NULL, 'c'},
+      {"files-with-matches", no_argument, NULL, 'l'},
+      {"line-number", no_argument, NULL, 'n'},
+      {0, 0, 0, 0}};
+
+  // while ((opt = getopt(argc, argv, "e:ivcln")) != -1) {
+     while ((opt = getopt_long(argc, argv, "e:ivcln", long_options, NULL)) != -1) {
     switch (opt) {
       case 'e':
         items->e = 1;
@@ -117,14 +128,16 @@ void handleSort(flags* items, int check, char* line, const char* filename,
 
 int main(int argc, char* argv[]) {
   flags item;
-  if (argc > 1) {
-    parserFlags(argc, argv, &item);
+  handleInitializeFlags(&item);
+  if (argc >= 3) {
+    parserFlags(&item, argc, argv);
     for (int i = optind; i < argc; i++) {
       const char* filename = argv[i];
       FILE* file = fopen(filename, "r");
 
       if (!file) {
-        fprintf(stderr, "file dont opened :(>>");
+        fprintf(stderr, "file don't opened: %s\n", filename);
+        // fprintf(stderr, "file dont opened :(>>");
       } else {
         lineGetter(argc, &item, file, filename);
         fclose(file);
