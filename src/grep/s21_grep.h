@@ -1,22 +1,25 @@
+#ifndef S21_GREP_H
+#define S21_GREP_H
+
 #include <getopt.h>
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 
-#define MAXPATTERNLENGTH 100
-#define MAXPATTERNS 1000
+typedef struct {
+    int e, i, v, c, l, n, h, s, f, o;
+    char pattern[1024];
+} arg;
 
-typedef struct fFlags {
-  int e, i, v, c, l, n;
-  char patterns[MAXPATTERNS * (MAXPATTERNLENGTH + 1)];
-} flags;
+#define OK 0
+#define ERROR 1
 
-void handleInitializeFlags(flags* item);
-void lineGetter(int argc, flags* arg, FILE* file, const char* filename);
-void parserFlags(int argc, char** argv, flags* arg);
-int handleSearch(char* line, flags* arg, regex_t regex, const char* filename,
-                 int* matchcounter, int argc);
-void handleSort(flags* arg, int check, char* line, const char* filename,
-                int argc);
+void read_file(const char *filename, arg *arguments, regex_t regex, int count_files, int empty_pattern, int file_index);
+int read_file_f(const char *filename, arg *arguments);
+void parse_options(int argc, char *argv[], arg *arguments, int *empty_pattern);
+int output(char *line, arg *arguments, regex_t regex, int count_files, const char *filename, int line_number, int empty_pattern);
+void iter_files(int argc, char *argv[], arg arguments, regex_t regex, int empty_pattern);
+int check_error_reg(arg *arguments, regex_t *regex);
+
+#endif // S21_GREP_H

@@ -1,142 +1,187 @@
 #include "s21_grep.h"
 
-void lineGetter(int argc, flags* item, FILE* file, const char* filename) {
-  char* line = NULL;
-  size_t lineMemory = 0;
-  regex_t regex;
-  int linenAmount = 1;
-  int matchAmount = 0;
-  int regexMode = REG_EXTENDED;
-
-  if (item->i) regexMode = regexMode | REG_ICASE;
-  if (regcomp(&regex, item->patterns, regexMode) != 0) {
-    fprintf(stderr, "invalid patterns || pattern don't exist");
-    return;
-  }
-
-  ssize_t readcount;
-  while ((readcount = getline(&line, &lineMemory, file)) != -1) {
-    int check = handleSearch(line, item, regex, filename, &matchAmount, argc);
-    if (item->n && !check) {
-      if (argc - optind > 1)
-        printf("%s:%d:%s", filename, linenAmount, line);
-      else
-        printf("%d:%s", linenAmount, line);
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Not enough arguments\n");
+        return ERROR;
     }
-    linenAmount++;
-  }
 
-  if (item->l) {
-    if (matchAmount > 0) {
-      printf("%s\n", filename);
-    }
-  }
-  if (item->c) {
-    if (argc > 4) {
-      printf("%s:%d\n", filename, matchAmount);
-    } else {
-      printf("%d\n", matchAmount);
-    }
-  }
+    arg options = {0};
+    int empty_pattern = 0;
+    parse_options(argc, argv, &options, &empty_pattern);
 
-  if (line != NULL) free(line);
-  regfree(&regex);
-}
-
-int handleSearch(char* line, flags* item, regex_t regex, const char* filename,
-                 int* matchAmount, int argc) {
-  regmatch_t pmatch[100];
-  int check = regexec(&regex, line, 0, pmatch, 0);
-  if (check == 0) (*matchAmount)++;
-  handleSort(item, check, line, filename, argc);
-  return check;
-}
-
-void handleInitializeFlags(flags* item) {
-  item->e = item->i = item->v = item->c = item->l = item->n = 0;
-  item->patterns[0] = '\0';
-}
-
-void parserFlags(int argc, char** argv, flags* item) {
-  int opt;
-
-  handleInitializeFlags(item);
-
-  while ((opt = getopt(argc, argv, "e:ivcln")) != -1) {
-    switch (opt) {
-      case 'e':
-        item->e = 1;
-        strcat(item->patterns, optarg);
-        strcat(item->patterns, "|");
-        break;
-      case 'i':
-        item->i = 1;
-        break;
-      case 'v':
-        item->v = 1;
-        break;
-      case 'c':
-        item->c = 1;
-        break;
-      case 'l':
-        item->l = 1;
-        break;
-      case 'n':
-        item->n = 1;
-        break;
-      default:
-        fprintf(stderr, "invalid flag write grep --help");
-        break;
-    }
-  }
-
-  size_t length = strlen(item->patterns);
-  if (length > 0 && item->patterns[length - 1] == '|') {
-    item->patterns[length - 1] = '\0';
-  }
-  if (!item->e && optind < argc) {
-    strcat(item->patterns, argv[optind]);
-    optind++;
-  }
-}
-
-void handleSort(flags* item, int check, char* line, const char* filename,
-                int argc) {
-  if (item->v) check = !check;
-  if (!item->l && !item->n && !item->c) {
-    if (check == 0 && !item->n) {
-      if ((argc - optind) > 1) {
-        printf("%s:%s", filename, line);
-      } else {
-        printf("%s", line);
-      }
-    }
-  }
-}
-
-int main(int argc, char* argv[]) {
-  if (argc < 3) {
-    fprintf(stderr, "error: not enough flags");
-  } else {
-    flags* item = calloc(1, sizeof(flags));
-    if (!item) {
-      fprintf(stderr, "something has failed :(");
-    } else {
-      parserFlags(argc, argv, item);
-      for (int i = optind; i < argc; i++) {
-        const char* filename = argv[i];
-        FILE* file = fopen(filename, "r");
-
-        if (!file) {
-          fprintf(stderr, "something is wrong with the file :(");
-        } else {
-          lineGetter(argc, item, file, filename);
+    if (empty_pattern != -1 && strlen(options.pattern) > 0) {
+        regex_t regex;
+        if (check_error_reg(&options, &regex) == OK) {
+            iter_files(argc, argv, options, regex, empty_pattern);
+            regfree(&regex);
         }
-
-        fclose(file);
-      }
     }
-    free(item);
-  }
-  return 0;
+
+    return OK;
 }
+
+int check_error_reg(arg *arguments, regex_t *regex) {
+    int flags = REG_EXTENDED | (arguments->i ? REG_ICASE : 0);
+    int reerrcode = regcomp(regex, arguments->pattern, flags);
+    if (reerrcode != 0) {
+        char reerrbuf[1000];
+        regerror(reerrcode, regex, reerrbuf, sizeof(reerrbuf));
+        fputs(reerrbuf, stderr);
+        fputc('\n', stderr);
+    }
+    return reerrcode;
+}
+
+void iter_files(int argc, char *argv[], arg arguments, regex_t regex, int empty_pattern) {
+    for (int i = optind; i < argc; i++) {
+        read_file(argv[i], &arguments, regex, argc - optind, empty_pattern, i);
+    }
+}
+
+void read_file(const char *filename, arg *arguments, regex_t regex, int count_files, int empty_pattern, int file_index) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        fprintf(stderr, "No such file or directory: %s\n", filename);
+        return;
+    }
+
+    char line[1024]; // Buffer for reading lines
+    int count_lines = 0, line_number = 1, found_str = 0;
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        // Remove newline character if present
+        line[strcspn(line, "\n")] = 0;
+
+        if (output(line, arguments, regex, count_files, filename, line_number, empty_pattern)) {
+            count_lines++;
+            found_str = 1;
+        }
+        line_number++;
+    }
+
+    if (arguments->c) {
+        if (count_files > 1 && !arguments->h) printf("%s:", filename);
+        printf("%d\n", found_str ? 1 : 0);
+    }
+
+    if (arguments->l && found_str) printf("%s\n", filename);
+    if (arguments->v && !arguments->c && !arguments->l && !arguments->i && (count_files == 1 || file_index + 1 - optind < count_files)) {
+        printf("\n");
+    }
+
+    fclose(file);
+}
+
+int output(char *line, arg *arguments, regex_t regex, int count_files, const char *filename, int line_number, int empty_pattern) {
+    regmatch_t pm;
+    char *pline = line;
+    int found_match = 0;
+
+    while (regexec(&regex, pline, 1, &pm, 0) == 0) {
+        if (arguments->o && !arguments->v && !arguments->c && !arguments->l) {
+            for (int i = pm.rm_so; i < pm.rm_eo; i++) {
+                putchar(pline[i]);
+            }
+            putchar('\n');
+        }
+        pline += pm.rm_eo;
+        found_match = 1;
+    }
+
+    if (arguments->v) {
+        found_match = !found_match;
+    }
+
+    if (!arguments->c) {
+        if (found_match) {
+            if ((!arguments->l && !arguments->o) || (arguments->o && arguments->v)) {
+                if (count_files > 1 && !arguments->h) printf("%s:", filename);
+                if (arguments->n) {
+                    printf("%d:", line_number);
+                }
+                fputs(line, stdout);
+            }
+        } else if (strlen(arguments->pattern) == 0 || empty_pattern) {
+            if (count_files > 1) printf("%s:", filename);
+            fputs(line, stdout);
+        }
+    }
+
+    return found_match;
+}
+
+int read_file_f(const char *filename, arg *arguments) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        fprintf(stderr, "No such file or directory: %s\n", filename);
+        return -1;
+    }
+
+    char line[1024]; // Buffer for reading lines
+    int empty_pattern = 0;
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        line[strcspn(line, "\n")] = 0; // Remove newline character
+
+        if (strlen(line) > 0) {
+            if (strlen(arguments->pattern) > 0) {
+                strcat(arguments->pattern, "|");
+            }
+            strcat(arguments->pattern, line);
+        } else {
+            empty_pattern = 1;
+        }
+    }
+
+    fclose(file);
+    return empty_pattern;
+}
+
+void parse_options(int argc, char *argv[], arg *arguments, int *empty_pattern) {
+    int option;
+    while ((option = getopt(argc, argv, "e:ivclnhsf:o")) != -1) {
+        switch (option) {
+            case 'e':
+                arguments->e = 1;
+                if (strlen(arguments->pattern) > 0) strcat(arguments->pattern, "|");
+                strcat(arguments->pattern, optarg);
+                break;
+            case 'i':
+                arguments->i = 1;
+                break;
+            case 'v':
+                arguments->v = 1;
+                break;
+            case 'c':
+                arguments->c = 1;
+                break;
+            case 'l':
+                arguments->l = 1;
+                break;
+            case 'n':
+                arguments->n = 1;
+                break;
+            case 'h':
+                arguments->h = 1;
+                break;
+            case 's':
+                arguments->s = 1;
+                break;
+            case 'f':
+                arguments->f = 1;
+                *empty_pattern = read_file_f(optarg, arguments);
+                break;
+            case 'o':
+                arguments->o = 1;
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (!arguments->e && !arguments->f && optind < argc) {
+        strcat(arguments->pattern, argv[optind]);
+        optind++;
+    }
+} 
