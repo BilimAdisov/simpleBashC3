@@ -1,3 +1,7 @@
+
+#ifndef GREP_H
+#define GREP_H
+
 #include <getopt.h>
 #include <regex.h>
 #include <stdio.h>
@@ -20,3 +24,4 @@ int handleSearch(char* line, flags* arg, regex_t regex, const char* filename,
                  int* matchcounter, int argc);
 void handleSort(flags* arg, int check, char* line, const char* filename,
                 int argc);
+#endif
