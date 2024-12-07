@@ -20,7 +20,7 @@ void lineGetter(int argc, flags* item, FILE* file, const char* filename) {
   ssize_t readAmount;
   while ((readAmount = getline(&line, &lineMemory, file)) != -1) {
     int check = handleSearch(line, item, regex, filename, &matchAmount, argc);
-    sanitizeString(line); // Sanitize line
+    sanitizeString(line);  // Sanitize line
     // sanitizeString((char*)filename);
     if (item->n && !check) {
       if (argc - optind > 1)
@@ -103,7 +103,7 @@ void parserFlags(flags* items, int argc, char* argv[]) {
   if (length > 0 && items->patterns[length - 1] == '|') {
     items->patterns[length - 1] = '\0';
   }
-  
+
   if (!items->e && optind < argc) {
     strcat(items->patterns, argv[optind]);
     optind++;
@@ -111,10 +111,10 @@ void parserFlags(flags* items, int argc, char* argv[]) {
 }
 
 void sanitizeString(char* str) {
-    char* pos;
-    if ((pos = strchr(str, '%')) != NULL) {
-        *pos = '\0'; // Truncate the string at the first '%'
-    }
+  char* pos;
+  if ((pos = strchr(str, '%')) != NULL) {
+    *pos = '\0';  // Truncate the string at the first '%'
+  }
 }
 
 void handleSort(flags* items, int check, char* line, const char* filename,
@@ -122,14 +122,14 @@ void handleSort(flags* items, int check, char* line, const char* filename,
   if (items->v) check = !check;
   if (!items->l && !items->n && !items->c) {
     if (check == 0 && !items->n) {
-        sanitizeString(line); // Sanitize line
-            sanitizeString((char*)filename);
+      sanitizeString(line);  // Sanitize line
+      sanitizeString((char*)filename);
       if ((argc - optind) > 1) {
         printf("%s:%s", filename, line);
       } else {
         printf("%s", line);
       }
-    } 
+    }
   }
 }
 

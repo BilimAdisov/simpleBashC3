@@ -18,7 +18,7 @@ typedef struct fFlags {
 } flags;
 void sanitizeString(char* str);
 void lineGetter(int argc, flags* item, FILE* file, const char* filename);
-void parserFlags(flags* items, int argc, char *argv[]);
+void parserFlags(flags* items, int argc, char* argv[]);
 int handleSearch(char* line, flags* items, regex_t regex, const char* filename,
                  int* matchAmount, int argc);
 void handleSort(flags* items, int check, char* line, const char* filename,
