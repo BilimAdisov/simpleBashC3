@@ -11,7 +11,8 @@ void lineGetter(int argc, flags* item, FILE* file, const char* filename) {
   if (item->i) regexMode = regexMode | REG_ICASE;
   if (regcomp(&regex, item->patterns, regexMode) != 0) {
     char errbuf[100];
-    regerror(regcomp(&regex, item->patterns, regexMode), &regex, errbuf, sizeof(errbuf));
+    regerror(regcomp(&regex, item->patterns, regexMode), &regex, errbuf,
+             sizeof(errbuf));
     fprintf(stderr, "invalid patterns");
     exit(EXIT_FAILURE);
   }
@@ -19,6 +20,8 @@ void lineGetter(int argc, flags* item, FILE* file, const char* filename) {
   ssize_t readAmount;
   while ((readAmount = getline(&line, &lineMemory, file)) != -1) {
     int check = handleSearch(line, item, regex, filename, &matchAmount, argc);
+    sanitizeString(line); // Sanitize line
+    // sanitizeString((char*)filename);
     if (item->n && !check) {
       if (argc - optind > 1)
         printf("%s:%d:%s", filename, linenAmount, line);
@@ -54,17 +57,12 @@ int handleSearch(char* line, flags* items, regex_t regex, const char* filename,
   return check;
 }
 
-void handleInitializeFlags(flags* item) {
-  item->e = item->i = item->v = item->c = item->l = item->n = 0;
-  item->patterns[0] = '\0';
-}
-
-void parserFlags(flags* items, int argc, char *argv[]) {
+void parserFlags(flags* items, int argc, char* argv[]) {
   items->e = items->i = items->v = items->c = items->l = items->n = 0;
   items->patterns[0] = '\0';
   int opt;
 
-    struct option long_options[] = {
+  struct option long_options[] = {
       {"pattern", no_argument, NULL, 'e'},
       {"invert-match", no_argument, NULL, 'v'},
       {"ignore-case", no_argument, NULL, 'i'},
@@ -73,8 +71,7 @@ void parserFlags(flags* items, int argc, char *argv[]) {
       {"line-number", no_argument, NULL, 'n'},
       {0, 0, 0, 0}};
 
-  // while ((opt = getopt(argc, argv, "e:ivcln")) != -1) {
-     while ((opt = getopt_long(argc, argv, "e:ivcln", long_options, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "e:ivcln", long_options, NULL)) != -1) {
     switch (opt) {
       case 'e':
         items->e = 1;
@@ -106,10 +103,18 @@ void parserFlags(flags* items, int argc, char *argv[]) {
   if (length > 0 && items->patterns[length - 1] == '|') {
     items->patterns[length - 1] = '\0';
   }
+  
   if (!items->e && optind < argc) {
     strcat(items->patterns, argv[optind]);
     optind++;
   }
+}
+
+void sanitizeString(char* str) {
+    char* pos;
+    if ((pos = strchr(str, '%')) != NULL) {
+        *pos = '\0'; // Truncate the string at the first '%'
+    }
 }
 
 void handleSort(flags* items, int check, char* line, const char* filename,
@@ -117,18 +122,19 @@ void handleSort(flags* items, int check, char* line, const char* filename,
   if (items->v) check = !check;
   if (!items->l && !items->n && !items->c) {
     if (check == 0 && !items->n) {
-        if ((argc - optind) > 1) {
-          printf("%s:%s", filename, line);
-        } else {
-          printf("%s", line);
-        }
-    }
+        sanitizeString(line); // Sanitize line
+            sanitizeString((char*)filename);
+      if ((argc - optind) > 1) {
+        printf("%s:%s", filename, line);
+      } else {
+        printf("%s", line);
+      }
+    } 
   }
 }
 
 int main(int argc, char* argv[]) {
   flags item;
-  handleInitializeFlags(&item);
   if (argc >= 3) {
     parserFlags(&item, argc, argv);
     for (int i = optind; i < argc; i++) {
@@ -136,8 +142,7 @@ int main(int argc, char* argv[]) {
       FILE* file = fopen(filename, "r");
 
       if (!file) {
-        fprintf(stderr, "file don't opened: %s\n", filename);
-        // fprintf(stderr, "file dont opened :(>>");
+        fprintf(stderr, "file dont opened :(>>");
       } else {
         lineGetter(argc, &item, file, filename);
         fclose(file);

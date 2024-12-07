@@ -16,8 +16,7 @@ typedef struct fFlags {
   int e, i, v, c, l, n;
   char patterns[MAXPATTERNS * (MAXPATTERNLENGTH + 1)];
 } flags;
-
-void handleInitializeFlags(flags* item);
+void sanitizeString(char* str);
 void lineGetter(int argc, flags* item, FILE* file, const char* filename);
 void parserFlags(flags* items, int argc, char *argv[]);
 int handleSearch(char* line, flags* items, regex_t regex, const char* filename,

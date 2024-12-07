@@ -8,7 +8,7 @@ s21_cat.o: s21_cat.c s21_cat.h
 	gcc $(CFLGS) -c s21_cat.c -o s21_cat.o
 
 test: 
-	sh test_cat.sh
+	sh t_cat.sh
 
 style:
 	clang-format -i s21_cat.c
